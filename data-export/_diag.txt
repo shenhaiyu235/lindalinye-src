@@ -1,0 +1,15 @@
+=== Wed Aug 12 05:25:09 UTC 2026 导出诊断 ===
+projects: HTTP=000 rows=NA first=[]
+  !! projects 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+downstreams: HTTP=000 rows=NA first=[]
+  !! downstreams 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+contracts: HTTP=000 rows=NA first=[]
+  !! contracts 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+downstream_contracts: HTTP=000 rows=NA first=[]
+  !! downstream_contracts 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+memos: HTTP=000 rows=NA first=[]
+  !! memos 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+todos: HTTP=000 rows=NA first=[]
+  !! todos 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
+change_log: HTTP=000 rows=NA first=[]
+  !! change_log 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）
