@@ -29,12 +29,13 @@ jobs:
           # anon key 本就公开在前端代码中（app/src/lib/supabase.ts），非敏感
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhueG16Z21nbWZlc3JhdGhmbm5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMTE4OTAsImV4cCI6MjA5OTU4Nzg5MH0.PHLXOelFFqk8ugweQTgJgbHs4aKye9sQZHshJHJQ0R8
         run: |
+          set +e   # 关闭 errexit：curl 失败也要继续收集诊断并提交
           mkdir -p data-export
           DIAG=data-export/_diag.txt
           echo "=== $(date -u) 导出诊断 ===" > "$DIAG"
           FAIL=0
           for t in projects downstreams contracts downstream_contracts memos todos change_log; do
-            code=$(curl -sS -o "data-export/$t.json" -w "%{http_code}" --retry 3 --retry-delay 2 \
+            code=$(curl -sS --max-time 30 -o "data-export/$t.json" -w "%{http_code}" --retry 3 --retry-delay 2 \
               -H "apikey: $SUPABASE_ANON_KEY" \
               -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
               "$SUPABASE_URL/rest/v1/$t?select=*&limit=100000" 2>/dev/null)
@@ -42,7 +43,7 @@ jobs:
             first=$(head -c 80 "data-export/$t.json" | tr '\n' ' ')
             echo "$t: HTTP=$code rows=$n first=[$first]" >> "$DIAG"
             if [ "$code" != "200" ] || ! head -c 1 "data-export/$t.json" 2>/dev/null | grep -q '['; then
-              echo "  !! $t 导出异常（可能 RLS 未放通 anon 读，需在 Supabase 跑 rls_anon_read.sql）" >> "$DIAG"
+              echo "  !! $t 导出异常（521=项目暂停需在控制台 Resume；401/403=RLS 未放通 anon；000=网络层失败）" >> "$DIAG"
               FAIL=1
             else
               min=0
@@ -54,6 +55,8 @@ jobs:
             fi
           done
           cat "$DIAG"
+          # 无论成败都让 job 成功，保证诊断提交；数据是否可用由 _diag.txt 判定
+          exit 0
 
       - name: Commit and push data (incl. diagnostics)
         run: |
