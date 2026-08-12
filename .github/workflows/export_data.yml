@@ -3,6 +3,7 @@
 # 用途：从 Supabase 导出 7 张表为 JSON 并提交到 data-export/ 目录，
 #       供本机拉取后导入飞书多维表格（因本机到 supabase.co 的 SNI 被阻断）。
 # 触发：push 本文件 或 Actions 页面手动 Run workflow。
+# 诊断：无论成败都把 HTTP 码/行数/响应头部写入 data-export/_diag.txt 并提交。
 # 完成后：本机 git pull 拉取 data-export/*.json，导入后删除本 workflow 与目录。
 # ============================================================
 name: Export Supabase Data
@@ -29,31 +30,32 @@ jobs:
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhueG16Z21nbWZlc3JhdGhmbm5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMTE4OTAsImV4cCI6MjA5OTU4Nzg5MH0.PHLXOelFFqk8ugweQTgJgbHs4aKye9sQZHshJHJQ0R8
         run: |
           mkdir -p data-export
-          declare -A MIN=([projects]=50 [downstreams]=150)
+          DIAG=data-export/_diag.txt
+          echo "=== $(date -u) 导出诊断 ===" > "$DIAG"
           FAIL=0
           for t in projects downstreams contracts downstream_contracts memos todos change_log; do
             code=$(curl -sS -o "data-export/$t.json" -w "%{http_code}" --retry 3 --retry-delay 2 \
               -H "apikey: $SUPABASE_ANON_KEY" \
               -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-              "$SUPABASE_URL/rest/v1/$t?select=*&limit=100000")
+              "$SUPABASE_URL/rest/v1/$t?select=*&limit=100000" 2>/dev/null)
             n=$(jq 'length' "data-export/$t.json" 2>/dev/null || echo "NA")
-            echo "$t: HTTP $code, rows=$n, bytes=$(wc -c < data-export/$t.json)"
-            # 校验：必须 200 且是合法 JSON 数组
-            if [ "$code" != "200" ] || ! head -c 1 "data-export/$t.json" | grep -q '['; then
-              echo "  !! $t 导出异常"; FAIL=1
-            fi
-            # 行数下限校验（防 RLS 返回空数组）
-            min=${MIN[$t]}
-            if [ -n "$min" ] && [ "$n" != "NA" ] && [ "$n" -lt "$min" ]; then
-              echo "  !! $t 行数 $n 低于预期下限 $min（可能 RLS 未放通 anon 读）"; FAIL=1
+            first=$(head -c 80 "data-export/$t.json" | tr '\n' ' ')
+            echo "$t: HTTP=$code rows=$n first=[$first]" >> "$DIAG"
+            if [ "$code" != "200" ] || ! head -c 1 "data-export/$t.json" 2>/dev/null | grep -q '['; then
+              echo "  !! $t 导出异常（可能 RLS 未放通 anon 读，需在 Supabase 跑 rls_anon_read.sql）" >> "$DIAG"
+              FAIL=1
+            else
+              min=0
+              case $t in projects) min=50;; downstreams) min=150;; esac
+              if [ "$n" != "NA" ] && [ "$n" -lt "$min" ] 2>/dev/null; then
+                echo "  !! $t 行数 $n 低于下限 $min" >> "$DIAG"
+                FAIL=1
+              fi
             fi
           done
-          if [ "$FAIL" = "1" ]; then
-            echo "导出校验失败，不提交。若为 RLS 问题：在 Supabase SQL Editor 执行 rls_anon_read.sql 后重跑。"
-            exit 1
-          fi
+          cat "$DIAG"
 
-      - name: Commit and push data
+      - name: Commit and push data (incl. diagnostics)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
