@@ -46,6 +46,7 @@ export const SECTIONS: SectionDef[] = [
 
 const SETTLE_STATUS_OPTS = ['未结算', '办理中', '已结算']
 const TYPE_OPTS = ['自营', '转包', '合作挂靠']
+const PROJECT_STATUS_OPTS = ['已竣工未结算', '已验收未结算', '已验收已结算', '已撤场，已判决', '诉讼中', '仲裁中', '其他']
 const RISK_OPTS = ['极高(维稳)', '高', '中', '低']
 const PRIORITY_OPTS = ['P0', 'P1', 'P2']
 const WORKER_STATUS_OPTS = ['待处理', '处理中', '已解决']
@@ -59,6 +60,8 @@ export const FIELDS: FieldDef[] = [
   { key: 'phase',           label: '并购阶段',            type: 'select',  section: 'basic', options: ['并购前', '并购后'], tableColumn: { label: '并购阶段', width: 80 } },
   { key: 'ld_role',         label: '林大林业角色',        type: 'select',  section: 'basic', options: ['总包', '分包'], tableColumn: { label: '角色', width: 70, render: 'tag-role' } },
   { key: 'location',        label: '项目所在地',          type: 'text',    section: 'basic' },
+  { key: 'status',          label: '项目状态',            type: 'select',  section: 'basic', options: PROJECT_STATUS_OPTS },
+  { key: 'status_note',     label: '具体情况说明',        type: 'text',    section: 'basic', showWhen: p => p.status === '其他' },
 
   // 总包信息（ld_role=分包时显示）
   { key: 'gc_unit',         label: '总包单位',            type: 'text',    section: 'gc', tableColumn: { label: '总包单位', width: 140 } },

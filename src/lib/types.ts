@@ -6,6 +6,8 @@ export interface Project {
   phase: '并购前' | '并购后' | '';
   location: string;
   ld_role: '总包' | '分包' | '';
+  status: '已竣工未结算' | '已验收未结算' | '已验收已结算' | '已撤场，已判决' | '诉讼中' | '仲裁中' | '其他' | '';
+  status_note: string;
 
   // 总包信息（ld_role=分包时使用）
   gc_unit: string;
@@ -122,7 +124,7 @@ export interface Contract {
 }
 
 export const BLANK_PROJECT: Project = {
-  id: '', seq: null, name: '', type: '', phase: '', location: '', ld_role: '',
+  id: '', seq: null, name: '', type: '', phase: '', location: '', ld_role: '', status: '', status_note: '',
   gc_unit: '', gc_contact: '', gc_phone: '', gc_received: null, gc_remaining: null, gc_settle_status: '', gc_settle_note: '', gc_contract_name: '', gc_contract_amt: null,
   owner_unit: '', owner_contact: '', owner_phone: '', owner_received: null, owner_remaining: null,
   owner_settle_status: '', owner_to_gc_settle: '', owner_settle_note: '', upstream_contract_name: '', upstream_contract_amt: null,
